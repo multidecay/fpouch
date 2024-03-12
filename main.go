@@ -20,14 +20,56 @@ type Conf struct {
 	StorePath string
 }
 
-func (c Conf) print() {
-	fmt.Printf("store_path : %s \n", c.StorePath)
-}
-
 // ENDPOINT
 
-func uploadUi() {
+func uploadUi(w http.ResponseWriter, r *http.Request) {
+	layout := `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="shortcut icon" href="#" />
+	</head>
+		<body>
+			{{. }}
+		</body>
+	</html>
+	`
+	tpl, err := template.New("fpouch").Parse(layout)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(500)
+		return
+	}
 
+	payload := `<form method="POST" action="/upload" enctype="multipart/form-data" style="display:grid; gap: 50; margin: auto;">
+		<section id="uploads" style="display: grid; gaps: 50;">
+			<input name="files" type="file" placeholder="Put file here" required/>
+		</section>
+		<button type="button" style="background:white; color: navy; border: 1px solid navy;" id="addUpload">Add upload</button>
+		<button type="submit" style="margin-top: .5em;">Upload now !</button>
+	</form>
+	<script>
+
+		function newUploadInput(){
+			var x = document.createElement("input");
+			x.name = "files";
+			x.type = "file";
+			x.required = true;
+			return(x);
+		}
+		const addUploadButton = document.getElementById('addUpload');
+		const uploadForm = document.getElementById('uploads');
+
+		addUploadButton.addEventListener('click', ()=>{
+			uploadForm.insertBefore(newUploadInput(),null);
+		})
+
+	</script>
+	`
+
+	tpl.Execute(w, template.HTML(payload))
 }
 
 func uploadStore(w http.ResponseWriter, r *http.Request, c *Conf) {
@@ -120,13 +162,12 @@ func setupRoutes(conf *Conf) {
 			switch r.Method {
 			case "GET":
 				if !conf.NoUI {
-					w.Write([]byte("upload ui"))
+					uploadUi(w, r)
 					return
 				}
 				w.WriteHeader(404)
 			case "POST":
 				uploadStore(w, r, conf)
-				w.Write([]byte("upload endpoint"))
 			default:
 				w.WriteHeader(404)
 			}
