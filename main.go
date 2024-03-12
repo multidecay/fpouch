@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -54,12 +57,59 @@ func uploadStore(w http.ResponseWriter, r *http.Request, c *Conf) {
 	fmt.Fprintf(w, "Successfully Uploaded File\n")
 }
 
-func indexUi() {
+func indexUi(w http.ResponseWriter, r *http.Request, c *Conf) {
+	var files []string
 
-}
+	filepath.Walk(c.StorePath, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, filepath.Base(path))
+		}
+		return nil
+	})
 
-func downloadFile() {
+	if c.NoUI {
+		res, err := json.Marshal(files)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(500)
+			return
+		}
 
+		w.Header().Add("Content-type", "application/json")
+		w.Write(res)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	layout := `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="shortcut icon" href="#" />
+	</head>
+		<body>
+			{{. }}
+		</body>
+	</html>
+	`
+
+	tpl, err := template.New("fpouch").Parse(layout)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(500)
+		return
+	}
+
+	payload := "<section style='display: grid; gap: .5em;'>\n"
+	for _, file := range files {
+		payload += fmt.Sprintf("<a href='/%s'>%s</a> \n", file, file)
+	}
+	payload += "</section>"
+
+	tpl.Execute(w, template.HTML(payload))
 }
 
 // ROUTE
@@ -84,11 +134,12 @@ func setupRoutes(conf *Conf) {
 	}
 
 	if !conf.NoSharing {
+
 		http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "GET":
 				if !conf.NoUI {
-					w.Write([]byte("upload ui"))
+					indexUi(w, r, conf)
 					return
 				}
 				w.WriteHeader(404)
@@ -96,6 +147,9 @@ func setupRoutes(conf *Conf) {
 				w.WriteHeader(404)
 			}
 		})
+
+		fs := http.FileServer(http.Dir(conf.StorePath))
+		http.Handle("/", http.StripPrefix("/", fs))
 	}
 
 	fmt.Println("fpouch - pouch for file upload and sharing, starting...")

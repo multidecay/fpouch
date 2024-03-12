@@ -1,6 +1,10 @@
-<p align="center"><b>fpouch</b><br /> pouch for file upload and sharing.</p>
 
-(Alpha stage) Minimalist file sharing and upload server.
+<p align="center">
+<b align="center" style="font-size: 4em;"> 👝 </b><br />
+<b>fpouch</b><br /> Minimalist file sharing and upload server.
+</p>
+
+(Alpha stage) 
 
 ### How to use
 
