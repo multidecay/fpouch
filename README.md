@@ -1,10 +1,8 @@
 
 <p align="center">
 <b align="center" style="font-size: 4em;"> 👝 </b><br />
-<b>fpouch</b><br /> Minimalist file sharing and upload server.
+<b>fpouch</b><br /> 0.0.1 <br /> Minimalist file sharing and upload server.
 </p>
-
-(Alpha stage) 
 
 ### How to use
 
@@ -32,6 +30,12 @@ No UI option, you may direct upload from endpoint (e.g using CURL) and sharing i
 
 ```
 ./fpouch --no-ui
+```
+
+Change port:
+
+```
+./fpouch -port 6969
 ```
 
 ### License

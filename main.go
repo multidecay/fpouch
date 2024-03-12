@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // Confing struct
@@ -17,6 +18,7 @@ type Conf struct {
 	NoUpload  bool
 	NoSharing bool
 	NoUI      bool
+	Port      int
 	StorePath string
 }
 
@@ -192,9 +194,9 @@ func setupRoutes(conf *Conf) {
 		fs := http.FileServer(http.Dir(conf.StorePath))
 		http.Handle("/", http.StripPrefix("/", fs))
 	}
-
-	fmt.Println("fpouch - pouch for file upload and sharing, starting...")
-	http.ListenAndServe(":4444", nil)
+	port := strconv.Itoa(conf.Port)
+	fmt.Println("fpouch - pouch for file upload and sharing, starting at port " + port)
+	http.ListenAndServe(":"+port, nil)
 }
 
 // UTILS
@@ -213,10 +215,17 @@ func main() {
 	flag.BoolVar(&c.NoUpload, "no-upload", false, "disable file upload.")
 	flag.BoolVar(&c.NoUI, "no-ui", false, "disable upload and sharing will json.")
 	flag.StringVar(&c.StorePath, "store-path", wd, "place for store uploaded file and indexed for share.")
+	flag.IntVar(&c.Port, "port", 6942, "port to listen")
 	flag.Parse()
 
 	// clean the path from os path difference
 	c.StorePath = filepath.Clean(c.StorePath)
+
+	// prevent negative number
+	c.Port = int(uint16(c.Port))
+	if c.Port == 0 {
+		c.Port = 6942
+	}
 
 	// if the path not exist then create one
 	if IsPathNotExists(c.StorePath) {
